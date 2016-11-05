@@ -4,12 +4,22 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 from snippets.models import Snippet
-from snippets.serializers import SnippetSerializer
+from snippets.serializers import SnippetSerializer, UserSerializer
 
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-#from rest_framework.request import Request
+from rest_framework.request import Request
+
+from rest_framework.views import APIView
+
+from rest_framework import mixins
+from rest_framework import generics
+
+from django.contrib.auth.models import User
+
+from rest_framework import permissions
+from snippets.permissions import IsOwnerOrReadOnly
 
 
 # Create your views here.
@@ -38,7 +48,7 @@ def snippet_list(request,format=None):
     		serializer.save()
     		#return JSONResponse(serializer.data,status=status.HTTP_201_CREATED)
     		return Response(serializer.data,status=status.HTTP_201_CREATED)
-    	return Response(serializer.errors,status=status.HTTP_404_BAD_REQUEST)
+    	return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 #@csrf_exempt
 @api_view(['GET','PUT','DELETE'])
@@ -62,7 +72,7 @@ def snippet_detail(request,pk,format=None):
 		if serializer.is_valid():
 			serializer.save()
 			return Response(serializer.data)
-		return Response(serializer.errors,status=status.HTTP_404_BAD_REQUEST)
+		return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 	elif request.method == 'DELETE':
 		snippet.delete()
@@ -70,3 +80,94 @@ def snippet_detail(request,pk,format=None):
 		return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class SnippetList(APIView):
+	"""
+	List all snippets, or create a new snippet
+	"""
+	def get(self,request,format=None):
+		snippets = Snippet.objects.all()
+		serializer = SnippetSerializer(snippets,many=True)
+		return Response(serializer.data)
+
+	def post(self, request, format=None):
+		# does not need the json parser to parse the data in the request. request.data can be used
+		serializer = SnippetSerializer(data=request.data)
+		if serializer.is_valid():
+			serializer.save()
+			return Response(serializer.data, status=status.HTTP_201_CREATED)
+		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SnippetDetail(APIView):
+	"""
+	Retrieve, update or delete a snippet instance.
+	"""
+	def get_object(self,pk):
+		try:
+			return Snippet.objects.get(pk=pk)
+		except Snippet.DoesNotExist:
+			raise Http404
+
+	def get(self,request,pk,format=None):
+		snippet = self.get_object(pk)
+		serializer = SnippetSerializer(snippet)
+		return Response(serializer.data)
+
+	def put(self,request,pk,format=None):
+		snippet = self.get_object(pk)
+		serializer = SnippetSerializer(snippet,data=request.data)
+		if serializer.is_valid():
+			serializer.save()
+			return Response(serializer.data)
+		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+	def delete(self,request,pk,format=None):
+		snippet = self.get_object(pk)
+		snippet.delete()
+		return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SnippetList1(mixins.ListModelMixin,mixins.CreateModelMixin,generics.GenericAPIView):
+	queryset = Snippet.objects.all()
+	serializer_class = SnippetSerializer
+
+	def get(self,request,*args,**kwargs):
+		return self.list(request,*args,**kwargs)
+
+	def post(self,request,*args,**kwargs):
+		return self.create(request,*args,**kwargs)
+
+class SnippetDetail1(mixins.RetrieveModelMixin,mixins.UpdateModelMixin,mixins.DestroyModelMixin,generics.GenericAPIView):
+	queryset = Snippet.objects.all()
+	serializer_class = SnippetSerializer
+
+	def get(self,request,*args,**kwargs):
+		return self.retrieve(request,*args,**kwargs)
+
+	def put(self,request,*args,**kwargs):
+		return self.update(request,*args,**kwargs)
+
+	def delete(self,request,*args,**kwargs):
+		return self.destroy(request,*args,**kwargs)
+
+# Rest API 3 :D :D :D :D
+class SnippetList2(generics.ListCreateAPIView):
+	permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+	queryset = Snippet.objects.all()
+	serializer_class = SnippetSerializer
+
+	def perform_create(self,serializer):
+		serializer.save(owner=self.request.user)
+
+class SnippetDetail2(generics.RetrieveUpdateDestroyAPIView):
+	permission_classes = (permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly)
+	queryset = Snippet.objects.all()
+	serializer_class = SnippetSerializer
+
+class UserList(generics.ListAPIView):
+	queryset = User.objects.all()
+	serializer_class = UserSerializer
+
+class UserDetail(generics.RetrieveAPIView):
+	queryset = User.objects.all()
+	serializer_class = UserSerializer
