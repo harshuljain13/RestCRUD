@@ -30,8 +30,10 @@ from rest_framework import renderers
 #urlpatterns = [
     #url(r'^snippets/$', views.snippet_list),
     #url(r'^snippet/(?P<pk>[0-9]+)/$', views.snippet_detail),
+
     #url(r'^snippets/$',views.SnippetList.as_view()),
     #url(r'^snippet/(?P<pk>[0-9]+)/$', views.SnippetDetail.as_view()),
+
     #url(r'^snippets/$',views.SnippetList1.as_view()),
     #url(r'^snippet/(?P<pk>[0-9]+)/$', views.SnippetDetail1.as_view()),
     

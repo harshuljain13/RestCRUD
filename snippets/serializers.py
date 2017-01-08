@@ -17,7 +17,7 @@ class SnippetSerializer(serializers.HyperlinkedModelSerializer):
 	# owner is added so as to relate it with owner in perform_create. also ass owner in fields
 	#so as to interact with the model.
 	owner  = serializers.ReadOnlyField(source='owner.username')
-	#making the relationship between snippet and highlight code
+	#making the relationship between snippet and highlight code link(not highlighted code)
 	highlight = serializers.HyperlinkedIdentityField(view_name = 'snippet-highlight', format = 'html')
 
 	class Meta:

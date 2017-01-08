@@ -150,6 +150,10 @@ class SnippetDetail1(mixins.RetrieveModelMixin,mixins.UpdateModelMixin,mixins.De
 	def delete(self,request,*args,**kwargs):
 		return self.destroy(request,*args,**kwargs)
 
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+
 # Rest API 3 :D :D :D :D
 class SnippetList2(generics.ListCreateAPIView):
 	permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
@@ -171,11 +175,6 @@ class UserList(generics.ListAPIView):
 class UserDetail(generics.RetrieveAPIView):
 	queryset = User.objects.all()
 	serializer_class = UserSerializer
-
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework.reverse import reverse
-
 
 @api_view(['GET'])
 def api_root(request, format=None):
